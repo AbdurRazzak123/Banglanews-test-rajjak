@@ -1,0 +1,80 @@
+বাংলা সংবাদ — Final Google Sheet Setup
+
+A ID
+B Category
+C Headline
+D Details (পুরো খবর)
+E Image1 (ঐচ্ছিক — চাইলে ছবি দিন, না চাইলে ফাঁকা রাখুন)
+F Date
+G Image2 (Optional)
+H Image3 (Optional)
+I Video (Optional)
+
+Homepage/category pages (index.html ছাড়া): Details-এর প্রথম ৩টি ভিজ্যুয়াল লাইন পর্যন্ত summary দেখাবে, তারপর “আরও পড়ুন”। index.html-এর নিজস্ব নিয়ম অপরিবর্তিত। Image1, Image2, Image3 — তিনটিই ঐচ্ছিক; কোনো ছবি না দিলেও শুধু খবর প্রকাশ হবে।
+Details page: আগের নিয়ম অনুযায়ী প্রথম ৩০টি Unicode character বাদ দিয়ে বাকি লেখা দেখাবে। Image2 প্রায় ৩০–৪০ লাইন (টার্গেট ৩৫ লাইন) পরে; Image3 ও Video শেষে/পরবর্তী অংশে।
+Category label মোবাইলে ছবির ওপর আর বসবে না; ছবির নিচে সাদা অংশে থাকবে।
+
+
+================ AD SYSTEM (নতুন) ================
+
+একই Google Spreadsheet-এ নতুন একটি tab/Sheet তৈরি করো: Ads
+
+Ads tab-এর ১ম সারি:
+A1 = Position
+B1 = Active
+C1 = Image URL
+D1 = Click URL
+E1 = Title
+F1 = Ad Code
+
+Position-এর অনুমোদিত নাম:
+TOP
+MIDDLE TOP
+MIDDLE BOTTOM
+BOTTOM
+ALL (একই বিজ্ঞাপন সব জায়গায় চালানোর জন্য)
+MIDDLE (পুরোনো/legacy 3-slot page-এর জন্য)
+
+চারটি ad slot থাকা page-এ ক্রম হবে:
+1) TOP
+2) MIDDLE TOP
+3) MIDDLE BOTTOM
+4) BOTTOM
+
+একই Code/Video/Ad চার জায়গায় ব্যবহার করতে চাইলে দুইটি উপায় আছে:
+- সবচেয়ে সহজ: একটি row-তে Position = ALL রাখো এবং সেই row-তে Ad Code (বা Image URL) দাও। সিস্টেম একই বিজ্ঞাপন চারটি slot-এ আলাদাভাবে চালাবে।
+- অথবা TOP, MIDDLE TOP, MIDDLE BOTTOM, BOTTOM—চারটি row-তেই একই Ad Code/Video দিতে পারো।
+- গুরুত্বপূর্ণ: একই third-party Ad Code-এ একই container ID থাকলেও সমস্যা হবে না; প্রতিটি slot আলাদা isolated ad frame-এর ভিতরে code চালায়।
+
+চার কোম্পানির চারটি আলাদা ad চাইলে চারটি আলাদা row ব্যবহার করো:
+A2 = TOP
+A3 = MIDDLE TOP
+A4 = MIDDLE BOTTOM
+A5 = BOTTOM
+এবং প্রতিটি row-তে আলাদা Image URL / Click URL / Title / Ad Code দিতে পারো।
+
+উদাহরণ:
+TOP → Company A
+MIDDLE TOP → Company B
+MIDDLE BOTTOM → Company C
+BOTTOM → Company D
+
+Image URL ও Click URL প্রতিটি row অনুযায়ী আলাদাভাবে কাজ করবে। Ad Code থাকলে সেটিই অগ্রাধিকার পাবে।
+
+গুরুত্বপূর্ণ: Exact position-এর ad থাকলে সেটিই আগে ব্যবহার হবে। কোনো exact position খালি থাকলে ALL row-এর ad ব্যবহার হবে। দুইটি middle slot থাকলে MIDDLE TOP ও MIDDLE BOTTOM আলাদাভাবে কাজ করবে।
+
+শুধু এই Ads tab-এ code/URL পরিবর্তন করলেই হবে। বিজ্ঞাপনের জন্য HTML ফাইল বারবার GitHub-এ আপডেট করতে হবে না।
+
+গুরুত্বপূর্ণ:
+- Google Spreadsheet-টি অবশ্যই এমনভাবে Share/Publish করতে হবে যাতে ওয়েবসাইট সেটি পড়তে পারে।
+- Ad network-এর code তাদের Terms/Policy অনুযায়ী ব্যবহার করতে হবে।
+- যদি কোনো network dynamicভাবে injected code অনুমোদন না করে, তাদের নির্দেশনা অনুযায়ী static placement প্রয়োজন হতে পারে।
+===================================================
+
+================ এই ZIP-এর সর্বশেষ আপডেট ================
+১) index.html-এর “সর্বশেষ সংবাদ” এখন Google Sheet-এর সর্বশেষ ১০টি শিরোনামই ধারাবাহিকভাবে দেখাবে (নতুনটি আগে)।
+২) প্রতিটি শিরোনামে ক্লিক করলে home.html-এ সেই ID-র সংবাদ খুলে/ফোকাস হয়ে সরাসরি সেই সংবাদে স্ক্রল করবে।
+৩) Ads loader এখন shared ads-loader.js; তাই একই Ads tab থেকে প্রতিটি পেজের নির্ধারিত ad position অনুযায়ী বিজ্ঞাপন পড়বে।
+৪) ৪-slot Details/news page-এ TOP → MIDDLE TOP → MIDDLE BOTTOM → BOTTOM; ৩-slot index-এ TOP → MIDDLE → BOTTOM; ২-slot page-এ TOP → BOTTOM।
+৫) HTML ফাইল বারবার ad code দিয়ে সম্পাদনা করার দরকার নেই; Ads tab-এর Active/Ad Code/URL বদলালেই পরের page load-এ নতুন code নেওয়া হবে।
+==========================================================
