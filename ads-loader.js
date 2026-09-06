@@ -9,7 +9,7 @@
  * - The page must be served from GitHub Pages/HTTP(S), not opened as file://.
  * - Image/banner ads are rendered directly in the page.
  * - Google AdSense snippets are rendered in the parent page (NOT inside an iframe).
- * - Other third-party HTML ad code is isolated in an iframe for safety.
+ * - Adsterra/third-party HTML ad code is executed in the real page so ad networks can load normally on GitHub Pages.
  */
 (function () {
   'use strict';
@@ -206,69 +206,70 @@
     return true;
   }
 
-  function renderThirdPartyCode(slot, code, title) {
+  async function renderThirdPartyCode(slot, code, title) {
     if (!String(code || '').trim()) return false;
-    slot.innerHTML = '';
 
+    slot.innerHTML = '';
+    slot.classList.add('ad-loaded', 'third-party-ad-slot');
+    slot.setAttribute('data-ad-loaded', 'yes');
+    slot.setAttribute('aria-label', String(title || 'Advertisement'));
+
+    // IMPORTANT: Adsterra and similar networks must run in the real page
+    // document. The old version put the code inside iframe.srcdoc, which can
+    // prevent the network script from identifying/loading the GitHub Pages
+    // page correctly. We now execute the supplied ad HTML directly here.
     const wrap = document.createElement('div');
     wrap.className = 'sheet-ad-code-wrap';
-    wrap.style.cssText = 'position:relative;width:100%;max-width:100%;height:0!important;min-height:0!important;margin:0 auto;padding:0;overflow:hidden;display:block;line-height:0;box-sizing:border-box;';
-
-    const iframe = document.createElement('iframe');
-    iframe.title = String(title || 'Advertisement');
-    iframe.setAttribute('aria-label', String(title || 'Advertisement'));
-    iframe.setAttribute('scrolling', 'no');
-    iframe.setAttribute('frameborder', '0');
-    iframe.style.cssText = 'display:block;position:absolute;left:0;top:0;width:' + DESIGN_WIDTH + 'px;min-width:' + DESIGN_WIDTH + 'px;max-width:none;height:250px;border:0;margin:0;padding:0;background:transparent;overflow:hidden;transform-origin:top left;';
-
-    const doc = '<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=' + DESIGN_WIDTH + ',initial-scale=1,maximum-scale=1,user-scalable=no"><style>html,body{width:' + DESIGN_WIDTH + 'px!important;min-width:' + DESIGN_WIDTH + 'px!important;max-width:' + DESIGN_WIDTH + 'px!important;margin:0!important;padding:0!important;overflow:hidden!important;}*{box-sizing:border-box;}</style></head><body style="width:' + DESIGN_WIDTH + 'px;min-width:' + DESIGN_WIDTH + 'px;max-width:' + DESIGN_WIDTH + 'px;margin:0;padding:0;overflow:hidden;line-height:normal;">' + String(code) + '</body></html>';
-    iframe.srcdoc = doc;
-    wrap.appendChild(iframe);
+    wrap.style.cssText = 'position:relative;width:100%;max-width:100%;min-height:90px;margin:0 auto;padding:0;overflow:visible;display:block;box-sizing:border-box;text-align:center;line-height:normal;';
     slot.appendChild(wrap);
 
-    const fit = () => {
-      try {
-        const available = Math.max(1, wrap.clientWidth || DESIGN_WIDTH);
-        const scale = Math.min(1, available / DESIGN_WIDTH);
-        iframe.style.setProperty('transform', 'scale(' + scale + ')', 'important');
-        const d = iframe.contentDocument;
-        if (!d || !d.body) return;
-        const bodyRect = d.body.getBoundingClientRect();
-        let h = bodyRect.height || 0;
-        d.body.querySelectorAll('*').forEach(el => {
-          try {
-            const cs = d.defaultView.getComputedStyle(el);
-            if (cs.display === 'none' || cs.visibility === 'hidden' || parseFloat(cs.opacity || '1') === 0) return;
-            const r = el.getBoundingClientRect();
-            if (r.width > 0 && r.height > 0 && r.bottom > 0) h = Math.max(h, r.bottom);
-          } catch (_) {}
-        });
-        const scrollH = Math.max(d.documentElement ? d.documentElement.scrollHeight : 0, d.body.scrollHeight || 0);
-        const rawH = Math.min(900, Math.max(90, Math.ceil(h || scrollH || 250)));
-        iframe.style.setProperty('height', rawH + 'px', 'important');
-        wrap.style.setProperty('height', Math.ceil(rawH * scale) + 'px', 'important');
-      } catch (_) {}
-    };
+    const parsed = new DOMParser().parseFromString(String(code), 'text/html');
+    const nodes = Array.from(parsed.body.childNodes);
+    const scripts = [];
 
-    iframe.addEventListener('load', () => {
-      fit();
-      [150, 500, 1200, 2500, 5000].forEach(ms => setTimeout(fit, ms));
-      try {
-        if (window.ResizeObserver && iframe.contentDocument && iframe.contentDocument.body) {
-          const ro = new ResizeObserver(fit);
-          ro.observe(iframe.contentDocument.body);
-        }
-      } catch (_) {}
+    // Put ordinary markup/styles in the live page first.
+    nodes.forEach(node => {
+      if (node.nodeType === Node.ELEMENT_NODE && node.tagName.toLowerCase() === 'script') {
+        scripts.push(node);
+      } else {
+        wrap.appendChild(document.importNode(node, true));
+      }
     });
-    if (window.ResizeObserver) {
-      const ro = new ResizeObserver(fit);
-      ro.observe(wrap);
-    } else {
-      window.addEventListener('resize', fit, { passive: true });
+
+    // Execute scripts in the same order as the code stored in Google Sheets.
+    for (const source of scripts) {
+      await new Promise(resolve => {
+        const script = document.createElement('script');
+        Array.from(source.attributes).forEach(attr => {
+          if (attr.name.toLowerCase() !== 'src') script.setAttribute(attr.name, attr.value);
+        });
+
+        const src = source.getAttribute('src');
+        if (src) {
+          script.src = src;
+          script.async = false;
+          script.onload = () => resolve();
+          script.onerror = () => {
+            console.warn('Third-party ad script failed:', src);
+            resolve();
+          };
+        } else {
+          script.text = source.textContent || '';
+          resolve();
+        }
+
+        wrap.appendChild(script);
+      });
     }
 
-    slot.classList.add('ad-loaded');
-    slot.setAttribute('data-ad-loaded', 'yes');
+    // Give ad scripts a chance to create their iframe/banner before we measure.
+    [100, 500, 1200, 2500].forEach(ms => setTimeout(() => {
+      try {
+        const h = Math.max(90, Math.ceil(wrap.scrollHeight || 90));
+        slot.style.minHeight = h + 'px';
+      } catch (_) {}
+    }, ms));
+
     return true;
   }
 
@@ -297,7 +298,7 @@
         const ok = await renderAdSense(slot, ad.code, ad.title);
         if (ok) return true;
       }
-      if (renderThirdPartyCode(slot, ad.code, ad.title)) return true;
+      if (await renderThirdPartyCode(slot, ad.code, ad.title)) return true;
     }
 
     return renderImageAd(slot, ad.image, ad.click, ad.title);
