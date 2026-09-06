@@ -212,7 +212,7 @@
 
     const wrap = document.createElement('div');
     wrap.className = 'sheet-ad-code-wrap';
-    wrap.style.cssText = 'position:relative;width:100%;max-width:100%;height:0;margin:0 auto;padding:0;overflow:hidden;display:block;line-height:0;box-sizing:border-box;';
+    wrap.style.cssText = 'position:relative;width:100%;max-width:100%;height:0!important;min-height:0!important;margin:0 auto;padding:0;overflow:hidden;display:block;line-height:0;box-sizing:border-box;';
 
     const iframe = document.createElement('iframe');
     iframe.title = String(title || 'Advertisement');
@@ -230,7 +230,7 @@
       try {
         const available = Math.max(1, wrap.clientWidth || DESIGN_WIDTH);
         const scale = Math.min(1, available / DESIGN_WIDTH);
-        iframe.style.transform = 'scale(' + scale + ')';
+        iframe.style.setProperty('transform', 'scale(' + scale + ')', 'important');
         const d = iframe.contentDocument;
         if (!d || !d.body) return;
         const bodyRect = d.body.getBoundingClientRect();
@@ -245,8 +245,8 @@
         });
         const scrollH = Math.max(d.documentElement ? d.documentElement.scrollHeight : 0, d.body.scrollHeight || 0);
         const rawH = Math.min(900, Math.max(90, Math.ceil(h || scrollH || 250)));
-        iframe.style.height = rawH + 'px';
-        wrap.style.height = Math.ceil(rawH * scale) + 'px';
+        iframe.style.setProperty('height', rawH + 'px', 'important');
+        wrap.style.setProperty('height', Math.ceil(rawH * scale) + 'px', 'important');
       } catch (_) {}
     };
 
@@ -272,10 +272,22 @@
     return true;
   }
 
+  function renderTestBanner(slot, reason) {
+    slot.innerHTML = '';
+    slot.classList.add('ad-loaded', 'test-ad-slot');
+    slot.setAttribute('data-ad-loaded', 'test-banner');
+    slot.setAttribute('aria-label', 'Test advertisement banner');
+    slot.style.minHeight = '90px';
+    const box = document.createElement('div');
+    box.style.cssText = 'width:100%;min-height:90px;display:flex;align-items:center;justify-content:center;box-sizing:border-box;padding:18px 20px;border:2px dashed #94a3b8;border-radius:8px;background:#f8fafc;color:#334155;font-family:Arial,sans-serif;text-align:center;';
+    box.innerHTML = '<div><div style="font-size:22px;font-weight:700;margin-bottom:6px;">TEST BANNER</div><div style="font-size:13px;">Ads system is loading correctly. No active ad was found yet.</div><div style="font-size:11px;margin-top:5px;color:#64748b;">' + String(reason || 'Test mode') + '</div></div>';
+    slot.appendChild(box);
+    return true;
+  }
+
   async function render(slot, ad) {
     if (!ad) {
-      slot.innerHTML = '';
-      slot.setAttribute('data-ad-loaded', 'no-ad');
+      renderTestBanner(slot, 'No active ad in Google Sheet');
       return false;
     }
 
@@ -359,7 +371,7 @@
       }
     } catch (error) {
       console.warn('Google Sheet Ads load failed:', error);
-      // Keep the original placeholder when the Sheet is unreachable, which makes setup errors visible.
+      slots.forEach(slot => renderTestBanner(slot, 'Google Sheet could not be loaded'));
     }
   }
 
