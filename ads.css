@@ -9,6 +9,6 @@
 .ad-test-fallback span{font-size:18px;}
 .ad-test-fallback small{font-size:13px;opacity:.75;}
 
-/* v21 speed: reserve no artificial delay and keep ad content immediately paintable */
-.ad-slot { contain:layout paint; }
+/* v26: sequential slot rendering is handled by JS; v25 fix: do not use paint containment on ad slots; ad-network creatives may overflow/position internally. */
+.ad-slot { contain: none!important; }
 .ad-code-host img,.ad-code-host iframe { max-width:100%!important; }

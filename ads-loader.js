@@ -1,6 +1,6 @@
 /*
- * বাংলা সংবাদ — FINAL Ads Loader v22
- * Direct execution + safe sequential rendering.
+ * বাংলা সংবাদ — FINAL Ads Loader v26
+ * Same direct rendering engine used by the working ad slots + smart row retry.
  * Google Sheet Ads columns: A Position | B Active | C Image URL | D Click URL | E Title | F Ad Code
  * Supported: TOP, MIDDLE TOP, MIDDLE BOTTOM, BOTTOM, ALL, MIDDLE
  */
@@ -11,7 +11,7 @@
   const SHEET_NAME = 'Ads';
   const SHEET_URL = 'https://docs.google.com/spreadsheets/d/' + SHEET_ID +
     '/gviz/tq?tqx=out:json&sheet=' + encodeURIComponent(SHEET_NAME);
-  const VERSION = 'ads-v22-smart-retry-final';
+  const VERSION = 'ads-v26-sequential-final';
   // Built-in diagnostic fallback: this is NOT a paid/network ad. Set to false to hide it.
   const ENABLE_TEST_FALLBACK = true;
   const SHEET_TIMEOUT_MS = 5000;
@@ -259,7 +259,15 @@
         const ad={image:value(row,2),click:value(row,3),title:value(row,4),code:value(row,5)};
         if (ad.code || ad.image) groups[p].push(ad);
       });
-      await Promise.all(list.map((slot,i) => { const p=slotPos(slot,i,list.length); return render(slot,candidates(groups,p)); }));
+      // IMPORTANT: ad snippets may temporarily override document.write/document.writeln.
+      // Do NOT render slots in parallel: concurrent slots can overwrite each other's
+      // document.write hook and cause only some positions to render. Render one slot
+      // completely before starting the next, using the same engine for every position.
+      for (let i = 0; i < list.length; i++) {
+        const slot = list[i];
+        const p = slotPos(slot, i, list.length);
+        await render(slot, candidates(groups, p));
+      }
     } catch(e) {
       console.warn('Google Sheet Ads load failed:',e);
       list.forEach(s => {
