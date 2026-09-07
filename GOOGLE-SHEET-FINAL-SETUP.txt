@@ -15,9 +15,8 @@ Details page: আগের নিয়ম অনুযায়ী প্রথম �
 Category label মোবাইলে ছবির ওপর আর বসবে না; ছবির নিচে সাদা অংশে থাকবে।
 
 
-================ AD SYSTEM (নতুন) ================
-
-একই Google Spreadsheet-এ নতুন একটি tab/Sheet তৈরি করো: Ads
+================ AD SYSTEM (v21) ================
+একই Google Spreadsheet-এ Ads নামে একটি tab রাখো।
 
 Ads tab-এর ১ম সারি:
 A1 = Position
@@ -32,49 +31,46 @@ TOP
 MIDDLE TOP
 MIDDLE BOTTOM
 BOTTOM
-ALL (একই বিজ্ঞাপন সব জায়গায় চালানোর জন্য)
-MIDDLE (পুরোনো/legacy 3-slot page-এর জন্য)
+ALL
+MIDDLE (legacy)
 
-চারটি ad slot থাকা page-এ ক্রম হবে:
+চারটি ad slot থাকা page-এ ক্রম:
 1) TOP
 2) MIDDLE TOP
 3) MIDDLE BOTTOM
 4) BOTTOM
 
-একই Code/Video/Ad চার জায়গায় ব্যবহার করতে চাইলে দুইটি উপায় আছে:
-- সবচেয়ে সহজ: একটি row-তে Position = ALL রাখো এবং সেই row-তে Ad Code (বা Image URL) দাও। সিস্টেম একই বিজ্ঞাপন চারটি slot-এ আলাদাভাবে চালাবে।
-- অথবা TOP, MIDDLE TOP, MIDDLE BOTTOM, BOTTOM—চারটি row-তেই একই Ad Code/Video দিতে পারো।
-- গুরুত্বপূর্ণ: একই third-party Ad Code-এ একই container ID থাকলেও সমস্যা হবে না; প্রতিটি slot আলাদা isolated ad frame-এর ভিতরে code চালায়।
+*** ১) একই Ad চার জায়গায় চালাতে চাইলে ***
+একটি row-তেই Position = ALL দাও এবং F কলামে সেই একই Adsterra code দাও।
+সিস্টেম ALL-এর code চারটি slot-এ আলাদা আলাদা isolated ad frame-এ চালাবে।
 
-চার কোম্পানির চারটি আলাদা ad চাইলে চারটি আলাদা row ব্যবহার করো:
-A2 = TOP
-A3 = MIDDLE TOP
-A4 = MIDDLE BOTTOM
-A5 = BOTTOM
-এবং প্রতিটি row-তে আলাদা Image URL / Click URL / Title / Ad Code দিতে পারো।
-
-উদাহরণ:
+*** ২) চার কোম্পানির চার জায়গায় চারটি Ad চাইলে ***
+চারটি row ব্যবহার করো:
 TOP → Company A
 MIDDLE TOP → Company B
 MIDDLE BOTTOM → Company C
 BOTTOM → Company D
+প্রতিটি row-তে আলাদা Ad Code দিতে পারবে।
 
-Image URL ও Click URL প্রতিটি row অনুযায়ী আলাদাভাবে কাজ করবে। Ad Code থাকলে সেটিই অগ্রাধিকার পাবে।
+*** ৩) একই কোম্পানির ৩ জায়গায় ৩/৪টি আলাদা code চাইলে ***
+প্রতিটি position-এর জন্য আলাদা row দাও। যেমন:
+TOP → Company A / Code 1
+MIDDLE TOP → Company A / Code 2
+BOTTOM → Company A / Code 3
 
-গুরুত্বপূর্ণ: Exact position-এর ad থাকলে সেটিই আগে ব্যবহার হবে। কোনো exact position খালি থাকলে ALL row-এর ad ব্যবহার হবে। দুইটি middle slot থাকলে MIDDLE TOP ও MIDDLE BOTTOM আলাদাভাবে কাজ করবে।
+*** ৪) একই code আবার একই/অন্য slot-এ ব্যবহার করতে চাইলে ***
+একই Ad Code একাধিক row-তে কপি করতে পারো। অথবা ALL ব্যবহার করো।
+প্রতিটি slot-এর Ad Code আলাদা live iframe-এর ভিতরে চলে, তাই একই third-party container ID / global variable থাকলেও এক slot-এর সাথে অন্য slot-এর conflict হওয়ার ঝুঁকি অনেক কমে।
 
-শুধু এই Ads tab-এ code/URL পরিবর্তন করলেই হবে। বিজ্ঞাপনের জন্য HTML ফাইল বারবার GitHub-এ আপডেট করতে হবে না।
+Exact position-এর row থাকলে সেটিই আগে নেওয়া হবে। কোনো position-এ exact ad না থাকলে ALL fallback হবে।
+MIDDLE TOP / MIDDLE BOTTOM খালি থাকলে legacy MIDDLE-ও fallback হিসেবে কাজ করবে।
 
-গুরুত্বপূর্ণ:
-- Google Spreadsheet-টি অবশ্যই এমনভাবে Share/Publish করতে হবে যাতে ওয়েবসাইট সেটি পড়তে পারে।
-- Ad network-এর code তাদের Terms/Policy অনুযায়ী ব্যবহার করতে হবে।
-- যদি কোনো network dynamicভাবে injected code অনুমোদন না করে, তাদের নির্দেশনা অনুযায়ী static placement প্রয়োজন হতে পারে।
-===================================================
+Image URL + Click URL ব্যবহার করলে image ad দেখাবে। Ad Code থাকলে Ad Code-ই আগে ব্যবহার হবে; code ব্যর্থ হলে image fallback হবে।
 
-================ এই ZIP-এর সর্বশেষ আপডেট ================
-১) index.html-এর “সর্বশেষ সংবাদ” এখন Google Sheet-এর সর্বশেষ ১০টি শিরোনামই ধারাবাহিকভাবে দেখাবে (নতুনটি আগে)।
-২) প্রতিটি শিরোনামে ক্লিক করলে home.html-এ সেই ID-র সংবাদ খুলে/ফোকাস হয়ে সরাসরি সেই সংবাদে স্ক্রল করবে।
-৩) Ads loader এখন shared ads-loader.js; তাই একই Ads tab থেকে প্রতিটি পেজের নির্ধারিত ad position অনুযায়ী বিজ্ঞাপন পড়বে।
-৪) ৪-slot Details/news page-এ TOP → MIDDLE TOP → MIDDLE BOTTOM → BOTTOM; ৩-slot index-এ TOP → MIDDLE → BOTTOM; ২-slot page-এ TOP → BOTTOM।
-৫) HTML ফাইল বারবার ad code দিয়ে সম্পাদনা করার দরকার নেই; Ads tab-এর Active/Ad Code/URL বদলালেই পরের page load-এ নতুন code নেওয়া হবে।
+শুধু Ads tab-এ Active / Ad Code / URL পরিবর্তন করলেই পরের page load-এ নতুন বিজ্ঞাপন আসবে। HTML-এ প্রতিবার code বসাতে হবে না।
+
+গুরুত্বপূর্ণ: Google Spreadsheet ওয়েবসাইট থেকে পড়ার উপযোগীভাবে প্রকাশ/শেয়ার করা থাকতে হবে এবং ad network-এর Terms/Policy মেনে code ব্যবহার করতে হবে।
 ==========================================================
+
+
+FINAL ADS AUDIT NOTE: v21 uses direct sequential ad-code execution in the real HTTPS page context instead of about:blank iframe execution. If the provider still returns HTTP 403, the ad provider is rejecting the request/domain/token; code changes cannot override a server-side 403.

@@ -19,3 +19,6 @@ LIVE-SYNC CHECK (2026-09-02)
 - Ads explicitly read the "Ads" tab.
 - Requests use no-store plus a timestamp cache-buster, so browser/CDN cache does not intentionally serve an old sheet response.
 - Reloading the page fetches the current Google Sheet data; no HTML edit is required when news/ad rows change.
+
+
+FINAL ADS AUDIT NOTE: v21 uses direct sequential ad-code execution in the real HTTPS page context instead of about:blank iframe execution. If the provider still returns HTTP 403, the ad provider is rejecting the request/domain/token; code changes cannot override a server-side 403.
